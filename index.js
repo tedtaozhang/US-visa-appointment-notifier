@@ -6,7 +6,7 @@ const {delay, sendEmail, logStep} = require('./utils');
 const {siteInfo, loginCred, IS_PROD, NEXT_SCHEDULE_POLL, USE_MAILGUN, USE_TWILIO, MAX_NUMBER_OF_POLL, NOTIFY_ON_DATE_BEFORE, twilio} = require('./config');
 
 let isLoggedIn_mainAccnt = false;
-let isLoggedIn_checkAccnt = new Array(loginCred.EMAIL_CHECK.length).fill(false);;
+let isLoggedIn_checkAccnt = new Array(loginCred.EMAIL_CHECK.length).fill(false);
 let isScheduled = false;
 let maxTries = MAX_NUMBER_OF_POLL;
 let runFlag = true;
@@ -45,10 +45,8 @@ const login = async (page, login_email, login_password, msg) => {
 }
 
 async function getTime(page, date, facility_id) {
-
   try {
     const timeUrl = siteInfo.APPOINTMENT_TIME_URL(facility_id, date);
-
     await page.goto(timeUrl);
 
     const content = await page.evaluate(() => document.querySelector('pre').innerText);
@@ -116,8 +114,6 @@ async function reschedule(page, date, facility_id) {
   }
 }
 
-
-
 const notifyMe = async (earliestDate, city_name) => {
   logStep(`sending a notification to schedule for ${earliestDate}`);
 
@@ -150,7 +146,6 @@ const checkSchedules_1 = async (page) => {
     const appointments_url = siteInfo.APPOINTMENTS_JSON_URLS;
     const currentTime = format(new Date(), 'HH:mm');
 
-
     for (let i=0; i<appointments_url.length; i++) {
       const city_name = siteInfo.FACILITY_NAME[i];
       logStep('['+currentTime+'] checking for schedules for ' + city_name);
@@ -181,9 +176,7 @@ const checkSchedules_1 = async (page) => {
     console.log("Unable to parse page JSON content", err);
     return false;
   }
-
 }
-
 
 const checkSchedules_2 = async (page, url, mainPage) => {
   try{
@@ -225,10 +218,7 @@ const checkSchedules_2 = async (page, url, mainPage) => {
     console.log("Unable to parse page JSON content", err);
     return false;
   }
-
 }
-
-
 
 const process = async (mainBrowser, checkBrowser) => {
   let mainPage, checkPage = []; 
@@ -242,26 +232,26 @@ const process = async (mainBrowser, checkBrowser) => {
         checkBrowser[i].newPage(),
         new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 60000))
       ]);
-
     }
-    
   } catch (error) {
     console.log('New page creation timed out, retrying...');
   }
+
   while (maxTries > 0) {
     if(isScheduled) {
       break;
     }
     logStep(`starting process with ${maxTries} tries left`);
-    while (!isLoggedIn_mainAccnt) {
-      isLoggedIn_mainAccnt = await login(mainPage, loginCred.EMAIL, loginCred.PASSWORD, "main account");
-    }
-    for(let i in checkPage) {
-      while (!isLoggedIn_checkAccnt[i]) {
-        isLoggedIn_checkAccnt[i] = await login(checkPage[i], loginCred.EMAIL_CHECK[i], loginCred.PASSWORD_CHECK[i], "check account "+i);
-      }
-    }
-    
+
+    const loginResults = await Promise.all([
+      !isLoggedIn_mainAccnt ? login(mainPage, loginCred.EMAIL, loginCred.PASSWORD, "main account") : Promise.resolve(true),
+      ...loginCred.EMAIL_CHECK.map((email, index) =>
+        !isLoggedIn_checkAccnt[index] ? login(checkPage[index], email, loginCred.PASSWORD_CHECK[index], `check account ${index}`) : Promise.resolve(true)
+      )
+    ]);
+
+    isLoggedIn_mainAccnt = loginResults[0];
+    isLoggedIn_checkAccnt = loginResults.slice(1).map(result => result);
 
     if(runFlag) {
       isLoggedIn_mainAccnt = await checkSchedules_1(mainPage);
@@ -279,15 +269,12 @@ const process = async (mainBrowser, checkBrowser) => {
           await delay(NEXT_SCHEDULE_POLL);
         }
       }
-      
     }
     --maxTries;  
   }
 
   console.log('Reached Max tries');
 };
-
-
 
 (async () => {
   const mainBrowser = await puppeteer.launch(!IS_PROD ? {headless: false}: undefined);
@@ -306,5 +293,4 @@ const process = async (mainBrowser, checkBrowser) => {
   for(let i in siteInfo.SCHEDULE_ID_CHECK) {
     await checkBrowser[i].close();
   }
-
 })();
