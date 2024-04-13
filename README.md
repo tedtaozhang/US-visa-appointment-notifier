@@ -1,21 +1,24 @@
 # US-visa-appointment-notifier
+The project is based on [this](https://github.com/theoomoregbee/US-visa-appointment-notifier).
 
-This is just a script I put together to check and notify me via email ([MailGun](https://www.mailgun.com/)) when there's an earlier date before my initial appointment date. It doesn't handle **rescheduling**. 
+This is just a script I put together to check and notify me via email ([MailGun](https://www.mailgun.com/)) and via phone texts (Twilio) when there's an earlier date before my initial appointment date. You can also schedule and reschedule your appointment.
+
+By now only Canada us-visa website is tested.
 
 
 ```
 $ npm start
 =====>>> Step: starting process with 250 tries left
 =====>>> Step: logging in
-=====>>> Step: checking for schedules
-[{"date":"2023-02-08","business_day":true},{"date":"2023-04-26","business_day":true},{"date":"2023-10-11","business_day":true}]
-=====>>> Step: starting process with 249 tries left
-=====>>> Step: checking for schedules
-[{"date":"2023-04-26","business_day":true},{"date":"2023-10-11","business_day":true}]
-=====>>> Step: starting process with 248 tries left
-=====>>> Step: checking for schedules
-[{"date":"2023-10-11","business_day":true}]
-=====>>> Step: sending an email to schedule for 2023-10-11
+=====>>> Step: [20:36] checking for schedules for Ottawa
+[]
+=====>>> Step: [20:36] checking for schedules for Quebec City
+[]
+=====>>> Step: starting process with 4999 tries left
+[20:37] Ottawa: No Appointments Available
+[20:37] Quebec City: No Appointments Available
+[20:38] Ottawa: No Appointments Available
+[20:38] Quebec City: No Appointments Available
 ...
 ```
 
@@ -24,16 +27,17 @@ $ npm start
 
 ## How it works
 
+* Prepare a main account (the account you wish to make an appointment) and some check accounts (mainly used to check available times).
 * Logs you into the portal
 * checks for schedules by day 
-* If there's a date before your initial appointment, it notifies you via email
+* If there's a date before your initial appointment, it notifies you via email and phone texts (if you have a Twilio account).
 * If no dates found, the process waits for set amount of seconds to cool down before restarting and will stop when it reaches the set max retries.
 
-> see `config.js` or `.env.example` for values you can configure
+> see `.env` for values you can configure
 
 ## Configuration
 
-copy the example configuration file exampe in `.env.example`, rename the copied version to `.env` and replace the values.
+Modify `.env` and replace the values.
 
 ### MailGun config values 
 
