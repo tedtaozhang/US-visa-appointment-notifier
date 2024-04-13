@@ -47,7 +47,6 @@ const login = async (page, login_email, login_password, msg) => {
 async function getTime(page, date, facility_id) {
 
   try {
-    // 找到与传入的facility_id对应的TIME_URL模板
     const timeUrl = siteInfo.APPOINTMENT_TIME_URL(facility_id, date);
 
     await page.goto(timeUrl);
